@@ -1,3 +1,6 @@
+/**
+ * @fileoverview ExcelワークブックをPDFにエクスポートする
+ */
 function main() {
 
     forceCScript(WScript.Arguments);
@@ -11,23 +14,55 @@ function main() {
     WScript.Quit(0);
 }
 
+/**
+ * CScriptでの実行を強制する
+ * 引数がある場合は引き継ぐ
+ * @param {Array.<string>} args WScript.Arguments
+ */
 function forceCScript(args) {
-    // CScriptでの起動を強制する
-    // 引数も引き継いで渡す
     if (WScript.FullName.slice(-"*Script.exe".length).toLowerCase() == "wscript.exe") {
 
-        var str = "";
+        var strArgs = "";
         for (var i = 0; i < args.Count(); i++) {
-            str += " \"" + args.Item(i) + "\""
+            strArgs += " \"" + args.Item(i) + "\""
         }
         
-        new ActiveXObject("WScript.Shell").Run("cscript \"" + WScript.ScriptFullName + "\"" + str);
+        new ActiveXObject("WScript.Shell").Run("cscript \"" + WScript.ScriptFullName + "\"" + strArgs);
         WScript.Quit(0);
     }
 }
 
+/**
+ * 対応するフォーマットか、拡張子から判断する
+ * xlsx / xlsm / xls / csv ファイル
+ * @param {string} strFileName 判断対象のファイル名
+ * @returns {boolean} 対応する場合にtrue
+ */
+function boolSupportedFormat (strFileName) {
+
+    var fso = new ActiveXObject("Scripting.FileSystemObject");
+    var strExtension = fso.getExtensionName(strFileName).toLowerCase();
+
+    if ( strExtension == "xlsx"
+      || strExtension == "xlsm"
+      || strExtension == "xls"
+      || strExtension == "csv") {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+/**
+ * 引数チェック
+ * 以下を1つ以上含むことを確認する
+ * <ul>
+ * <li>xlsx / xlsm / xls / csv ファイル
+ * <li>上記を1つ以上含んだフォルダ
+ * </ul>
+ * @param {Array.<string>} args WScript.Arguments
+ */
 function checkArgs(args) {
-    // 引数チェック
     if (args.length == 0) {
         // 引数がない場合
         WScript.StdErr.WriteLine("Please specify target with arguments.");
@@ -37,8 +72,7 @@ function checkArgs(args) {
         var fso = new ActiveXObject("Scripting.FileSystemObject");
         
         for(var i = 0; i < args.Count(); i++) {
-            if (fso.folderExists(args.Item(i)) == false 
-            && !boolSupportedFormat(args.Item(i))) {
+            if (fso.folderExists(args.Item(i)) == false && !boolSupportedFormat(args.Item(i))) {
                 
                 // 引数がフォルダではないかつワークブックではないファイルを指している場合
                 WScript.StdErr.WriteLine(args.Item(i) + " is not supported format.");
@@ -65,21 +99,10 @@ function checkArgs(args) {
     }
 }
 
-function boolSupportedFormat (strFileName) {
-
-    var fso = new ActiveXObject("Scripting.FileSystemObject");
-    var strExtension = fso.getExtensionName(strFileName).toLowerCase();
-
-    if ( strExtension == "xlsx"
-      || strExtension == "xlsm"
-      || strExtension == "xls"
-      || strExtension == "csv") {
-        return true;
-    } else {
-        return false;
-    }
-}
-
+/**
+ * 引数を分別して、ワークブックをconvertWorkbook2PDF関数に引き渡す
+ * @param {Array.<string>} args WScript.Arguments
+ */
 function feedArgs2Converter (args) {
 
     var fso = new ActiveXObject("Scripting.FileSystemObject");
@@ -109,6 +132,10 @@ function feedArgs2Converter (args) {
 
 }
 
+/**
+ * ワークブックをPDFファイルとしてエクスポートする
+ * @param {string} strFileName ワークブック名
+ */
 function convertWorkbook2PDF (strFileName) {
 
     var fso = new ActiveXObject("Scripting.FileSystemObject");
